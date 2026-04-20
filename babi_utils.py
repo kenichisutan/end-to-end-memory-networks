@@ -102,13 +102,14 @@ def _find_task_files(
 
 @dataclasses.dataclass(frozen=True)
 class QAExample:
+    task_id: int
     story: List[List[str]]  # list of sentences, each tokenized
     question: List[str]
     answer: str
     supporting: Optional[List[int]] = None  # indices of supporting facts (unused for weak supervision)
 
 
-def read_babi_examples(path: str | os.PathLike) -> List[QAExample]:
+def read_babi_examples(path: str | os.PathLike, *, task_id: int) -> List[QAExample]:
     """
     Parse a bAbI QA file into QAExample objects.
     """
@@ -131,7 +132,15 @@ def read_babi_examples(path: str | os.PathLike) -> List[QAExample]:
                 q, a, sup = rest.split("\t")
                 q_tokens = tokenize(q.rstrip("?"))
                 supporting = [int(x) - 1 for x in sup.split()] if sup else None
-                examples.append(QAExample(story=list(story), question=q_tokens, answer=a.strip(), supporting=supporting))
+                examples.append(
+                    QAExample(
+                        task_id=task_id,
+                        story=list(story),
+                        question=q_tokens,
+                        answer=a.strip(),
+                        supporting=supporting,
+                    )
+                )
             else:
                 # statement line
                 sent = rest.rstrip(".")
@@ -156,12 +165,40 @@ def load_babi_tasks(
     root = Path(babi_root)
     for tid in task_ids:
         train_path, valid_path, test_path = _find_task_files(root, task_id=tid, subset=subset)
-        train_all.extend(read_babi_examples(train_path))
+        train_all.extend(read_babi_examples(train_path, task_id=tid))
         if valid_path is not None:
-            valid_all.extend(read_babi_examples(valid_path))
-        test_all.extend(read_babi_examples(test_path))
+            valid_all.extend(read_babi_examples(valid_path, task_id=tid))
+        test_all.extend(read_babi_examples(test_path, task_id=tid))
 
     return train_all, valid_all, test_all
+
+
+def vectorize_examples_with_task_ids(
+    examples: Sequence[QAExample],
+    stoi: Dict[str, int],
+    *,
+    memory_size: int,
+    sentence_size: int,
+    question_size: int,
+    pad_token: str = "<PAD>",
+    unk_token: str = "<UNK>",
+    reverse_story: bool = True,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Same as vectorize_examples, but also returns task_ids: [N].
+    """
+    memories, questions, answers = vectorize_examples(
+        examples,
+        stoi,
+        memory_size=memory_size,
+        sentence_size=sentence_size,
+        question_size=question_size,
+        pad_token=pad_token,
+        unk_token=unk_token,
+        reverse_story=reverse_story,
+    )
+    task_ids = np.array([ex.task_id for ex in examples], dtype=np.int64)
+    return memories, questions, answers, task_ids
 
 
 def build_vocab(
