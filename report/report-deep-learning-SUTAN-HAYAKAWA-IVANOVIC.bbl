@@ -1,0 +1,23 @@
+\begin{thebibliography}{3}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Sukhbaatar et~al.(2015)Sukhbaatar, Szlam, Weston, and Fergus]{sukhbaatar2015end}
+Sainbayar Sukhbaatar, Arthur Szlam, Jason Weston, and Rob Fergus.
+\newblock End-to-end memory networks.
+\newblock In \emph{Advances in Neural Information Processing Systems}, volume~28, 2015.
+
+\bibitem[Weston et~al.(2015{\natexlab{a}})Weston, Bordes, Chopra, and Mikolov]{weston2015towards}
+Jason Weston, Antoine Bordes, Sumit Chopra, and Tomas Mikolov.
+\newblock Towards {AI}-complete question answering: A set of prerequisite toy tasks.
+\newblock \emph{arXiv preprint arXiv:1502.05698}, 2015{\natexlab{a}}.
+
+\bibitem[Weston et~al.(2015{\natexlab{b}})Weston, Chopra, and Bordes]{weston2015memory}
+Jason Weston, Sumit Chopra, and Antoine Bordes.
+\newblock Memory networks.
+\newblock In \emph{International Conference on Learning Representations}, 2015{\natexlab{b}}.
+
+\end{thebibliography}

@@ -1,0 +1,108 @@
+
+\documentclass{article}
+\usepackage{report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC,times}
+
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+
+\title{End-to-End Memory Networks on the bAbI Question Answering Benchmark}
+
+\author{Juan Kenichi Sutan \& Maxime Hayakawa-Ivanovic \\
+Universit\'e Paris-Saclay
+}
+
+\iclrfinalcopy
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We implement the end-to-end memory network (MemN2N) of \citet{sukhbaatar2015end} in PyTorch and train it on the full English bAbI task suite \citep{weston2015towards} under weak supervision (we do not use supporting-sentence labels). The model uses multi-hop softmax attention over fixed-size story memories, position encoding for sentences, temporal embeddings over memory slots, and adjacent weight tying. On the \texttt{en-10k} split with joint training on all twenty tasks for thirty epochs, we obtain $87.8\%$ exact-match accuracy on the official test set, with large gaps across tasks. We discuss where the implementation matches the paper, what we measured, and what we would try next.
+\end{abstract}
+
+\section{Introduction}
+
+Question answering over short synthetic stories is a simple testbed for models that must read text, keep a working memory of facts, and answer a query. The bAbI tasks \citep{weston2015towards} expose twenty reasoning patterns, from single supporting facts to harder setups such as induction and path finding.
+
+\textbf{Research question.} Can a MemN2N \citep{sukhbaatar2015end}, trained only from story, question, and answer strings, learn to attend to the right sentences often enough to get strong aggregate accuracy when all twenty tasks are trained together?
+
+We focus on a faithful small-scale reimplementation tied to our course project code rather than chasing state-of-the-art numbers. The goal is to connect the paper's architecture to a running system and to read off concrete metrics and failure modes.
+
+\section{Related work}
+
+Early memory-augmented models such as memory networks \citep{weston2015memory} used discrete or heavily supervised components. MemN2N \citep{sukhbaatar2015end} keeps a continuous memory, reads it with softmax attention, and is trained end to end with ordinary backpropagation, which is closer to how we use neural networks today.
+
+Attention over a set of vectors is the same broad idea as in sequence-to-sequence models with an encoder state, except here the attended positions are explicit memory slots filled with sentence encodings, and the model may take several hops before predicting an answer token.
+
+The bAbI suite \citep{weston2015towards} remains a standard sanity check for reading and reasoning stacks. We use it because labels are clean, code is easy to check, and per-task accuracy makes failures visible.
+
+\section{Method}
+
+\paragraph{Input and memory layout.}
+Each training example is a story (a list of sentences), a question, and a single-word answer. Stories are truncated to the last fifty sentences (paper-style cap). Each sentence and the question are padded or truncated to a fixed word length for batching. Words are embedded with a shared vocabulary that includes padding and unknown tokens.
+
+\paragraph{Sentence and question encoding.}
+When position encoding is on, each sentence is represented as a weighted sum of word embeddings, with weights given by the closed form in \citet{sukhbaatar2015end} so that word order matters. When it is off, the representation is a plain sum of embeddings (bag of words). The question uses the same encoding mode.
+
+\paragraph{Multi-hop attention.}
+Let $u$ be the question vector. For hop $k$, memory slot vectors $m_i^{(k)}$ are built from the story with embedding matrix $A^{(k)}$, and output vectors $c_i^{(k)}$ with $C^{(k)}$. Attention weights are $p_i = \mathrm{softmax}_i( u^\top m_i )$. The read vector is $o = \sum_i p_i c_i$, and the state updates as $u \leftarrow u + o$. After $K$ hops, a linear map from the final $u$ to vocabulary logits gives the predicted answer word.
+
+\paragraph{Tying and temporal terms.}
+We use adjacent tying as in the paper: $A^{(k+1)}$ shares weights with $C^{(k)}$, the first-hop question side matches $A^{(1)}$, and the final answer projection is tied to the last $C$ embedding table. Learned vectors $T_A(i)$ and $T_C(i)$ are added per memory index $i$ when temporal encoding is enabled, so the model can use order in the story beyond word order inside a sentence.
+
+Training minimizes cross-entropy on the gold answer word. Gradients are clipped by global norm (value $40$ in our code).
+
+\section{Experimental setup}
+
+\paragraph{Dataset and splits.}
+We use bAbI English \texttt{en-10k} \citep{weston2015towards}: for each of the twenty tasks we load the provided training and test files. The \texttt{en-10k} release does not ship a separate validation file for each task, so we hold out ten percent of the pooled training examples at random (seed $42$) as validation, matching the notebook pipeline. All twenty tasks are concatenated for joint training, which matches the ``all tasks at once'' setting discussed in \citet{sukhbaatar2015end}.
+
+\paragraph{Metrics.}
+We report exact-match accuracy on the answer token: a prediction is correct if the argmax over the vocabulary equals the gold answer id. We also report per-task test accuracy by masking batches with the task id stored at example build time.
+
+\paragraph{Hyperparameters (from our notebook).}
+Embedding dimension $50$, three hops, batch size $32$, thirty epochs, Adam optimizer with learning rate $10^{-3}$, softmax temperature as default, memory size cap $50$, max sentence length $11$ and max question length $11$ after inference from the data (with caps $20$ in code that are not tight on this split). The answer vocabulary is the same word index space as the rest of the text; in our run the vocabulary has $183$ tokens including padding and unknown. Position encoding and temporal encoding are both on. The implementation runs in PyTorch; we used whichever device the notebook selected (CPU, CUDA, or MPS). We did not sweep hyperparameters for this report.
+
+\section{Results and discussion}
+
+After thirty epochs, the best checkpoint by validation accuracy gives \textbf{test loss $0.2900$} and \textbf{test accuracy $0.878$} ($87.8\%$) on the full joint test set.
+
+Table~\ref{tab:per_task} lists per-task test accuracy for that run. Several tasks reach $1.000$; the weakest in this run are task~19 ($0.141$), task~16 ($0.456$), and task~17 ($0.612$). Task~19 (path finding) and task~16 (basic induction) are known hard cases in the literature; our numbers are in line with ``some tasks fail under plain MemN2N training'' rather than with a fully solved system.
+
+We also printed attention weights for one test example (``where is john ?''). In that trace, hop~1 already puts mass $0.995$ on the sentence that states John's location, and hop~2 concentrates $1.000$ on the same slot, which matches the intended behavior of refining focus across hops.
+
+\paragraph{What differs from the paper.}
+We use Adam and a single learning rate instead of the paper's SGD schedule. We did not implement linear start training or random dummy memories. Our story ordering for memory follows the notebook (recent sentences with padding), which should be checked carefully when comparing to published numbers.
+
+\begin{table}[t]
+\caption{Per-task exact-match accuracy on the bAbI \texttt{en-10k} test set (one joint MemN2N run).}
+\label{tab:per_task}
+\begin{center}
+\begin{tabular}{r|r||r|r}
+task & acc & task & acc \\ \hline
+1 & 1.000 & 11 & 1.000 \\
+2 & 0.981 & 12 & 1.000 \\
+3 & 0.860 & 13 & 1.000 \\
+4 & 1.000 & 14 & 1.000 \\
+5 & 0.974 & 15 & 1.000 \\
+6 & 0.938 & 16 & 0.456 \\
+7 & 0.895 & 17 & 0.612 \\
+8 & 0.932 & 18 & 0.907 \\
+9 & 0.958 & 19 & 0.141 \\
+10 & 0.902 & 20 & 1.000 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{Conclusion}
+
+MemN2N with three hops, position encoding, and temporal encoding reaches strong average accuracy on joint bAbI \texttt{en-10k}, but a few tasks still dominate the error. The largest gains over a bag-of-words baseline would come from the same ingredients the paper stresses: more hops where needed, better sentence encoding for order-sensitive tasks, and training tricks for hard tasks.
+
+For future work we would add the paper's linear start schedule, optional random noise memory slots, and a small validation sweep over embedding size and hop count. We would also log mean error rate in the paper's style for easier comparison. Our code and numbers are fixed in the course notebook so that claims in this report can be checked line by line.
+
+\bibliography{report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC}
+\bibliographystyle{report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC}
+
+\end{document}

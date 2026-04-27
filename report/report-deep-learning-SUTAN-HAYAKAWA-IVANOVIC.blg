@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2024)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux
+The style file: report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bst
+Database file #1: report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bib
+You've used 3 entries,
+            2773 wiz_defined-function locations,
+            605 strings with 5389 characters,
+and the built_in function-call counts, 1447 in all, are:
+= -- 109
+> -- 108
+< -- 1
++ -- 37
+- -- 33
+* -- 125
+:= -- 230
+add.period$ -- 9
+call.type$ -- 3
+change.case$ -- 20
+chr.to.int$ -- 2
+cite$ -- 6
+duplicate$ -- 68
+empty$ -- 114
+format.name$ -- 36
+if$ -- 293
+int.to.chr$ -- 2
+int.to.str$ -- 1
+missing$ -- 3
+newline$ -- 23
+num.names$ -- 12
+pop$ -- 47
+preamble$ -- 1
+purify$ -- 17
+quote$ -- 0
+skip$ -- 46
+stack$ -- 0
+substring$ -- 6
+swap$ -- 8
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 33
+warning$ -- 0
+while$ -- 9
+width$ -- 0
+write$ -- 44
