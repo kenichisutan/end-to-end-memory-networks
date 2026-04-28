@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC"] 1777319140.39407 "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bbl" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC" 1777319185.17528 0
-  "./report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bib" 1777317049.67791 721 17c03414c644bad3680d0a2b238d67d6 ""
+["bibtex report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC"] 1777390296.31767 "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bbl" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC" 1777390320.56625 0
+  "./report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bib" 1777386854.69581 940 5ff79601699c4658f7a3294c33b613e2 ""
   "./report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bst" 1777308964 26973 af983813ca1a1414954dbceae7baa2a1 ""
-  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux" 1777319184.97555 2718 ae0bb7ec8c4e4f0a4396d4f924e4dc8c "pdflatex"
+  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux" 1777390320.35829 2847 61e531864ab48fad0db73e7448ec9952 "pdflatex"
   (generated)
   "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bbl"
   "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.blg"
   (rewritten before read)
-["pdflatex"] 1777319184.5132 "/Users/kenichisutan/Documents/Paris-Saclay/deep learning/end-to-end-memory-networks/report/report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.tex" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.pdf" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC" 1777319185.1754 0
-  "/Users/kenichisutan/Documents/Paris-Saclay/deep learning/end-to-end-memory-networks/report/report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.tex" 1777319184.29765 8736 b204b26d3134b2c04d2d2624d0c0e37a ""
+["pdflatex"] 1777390319.89285 "/Users/kenichisutan/Documents/Paris-Saclay/deep learning/end-to-end-memory-networks/report/report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.tex" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.pdf" "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC" 1777390320.56638 0
+  "/Users/kenichisutan/Documents/Paris-Saclay/deep learning/end-to-end-memory-networks/report/report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.tex" 1777390319.64974 10493 784858715e46bccd7a8d58a481b3e903 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2024/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -110,11 +110,11 @@
   "fancyhdr.sty" 1777308964 20521 e5d13d98d57bd53d4fed3aa61bd29c86 ""
   "math_commands.tex" 1777308964 12284 a71653715108dc62b66e3a0bde0307d8 ""
   "natbib.sty" 1777308964 45154 40088ce024445d7ee2bca59e704cdd01 ""
-  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux" 1777319184.97555 2718 ae0bb7ec8c4e4f0a4396d4f924e4dc8c "pdflatex"
-  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bbl" 1777319140.57974 1133 e56a6d938fa117c0f50550f9f0afc517 "bibtex report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC"
-  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.out" 1777319184.97604 670 dae1e853c885c47a7769d11379d8e4b8 "pdflatex"
+  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux" 1777390320.35829 2847 61e531864ab48fad0db73e7448ec9952 "pdflatex"
+  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.bbl" 1777390296.49899 1380 28053a66f018fc174a7fb3c383302d34 "bibtex report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC"
+  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.out" 1777390320.3587 670 dae1e853c885c47a7769d11379d8e4b8 "pdflatex"
   "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.sty" 1777308964 9025 23b1c1f0d6db90b9ce38add2e9613659 ""
-  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.tex" 1777319184.29765 8736 b204b26d3134b2c04d2d2624d0c0e37a ""
+  "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.tex" 1777390319.64974 10493 784858715e46bccd7a8d58a481b3e903 ""
   (generated)
   "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.aux"
   "report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC.log"

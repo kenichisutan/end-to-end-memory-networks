@@ -32,9 +32,11 @@ We focus on a faithful small-scale reimplementation tied to our course project c
 
 \section{Related work}
 
-Early memory-augmented models such as memory networks \citep{weston2015memory} used discrete or heavily supervised components. MemN2N \citep{sukhbaatar2015end} keeps a continuous memory, reads it with softmax attention, and is trained end to end with ordinary backpropagation, which is closer to how we use neural networks today.
+Early memory-augmented models such as memory networks \citep{weston2015memory} used discrete or heavily supervised components. MemN2N \citep{sukhbaatar2015end} keeps a continuous memory, reads it with softmax attention, and is trained end to end with ordinary backpropagation.
 
-Attention over a set of vectors is the same broad idea as in sequence-to-sequence models with an encoder state, except here the attended positions are explicit memory slots filled with sentence encodings, and the model may take several hops before predicting an answer token.
+It is also useful to compare this to standard recurrent models. In a plain RNN, long-range facts must be stored in a hidden state that is updated at every token. In practice this can make long dependencies hard to keep, especially when several facts compete for the same hidden capacity. LSTMs improve this with gates and explicit memory cells \citep{hochreiter1997long}, but they still summarize the full past in a compact state. MemN2N instead reads from an external memory buffer at each hop, so supporting facts can remain accessible as separate slots.
+
+Attention over a set of vectors is the same broad idea as in sequence models with attention, but here the attended positions are explicit memory slots filled with sentence encodings, and the model can make several hops before predicting an answer token.
 
 The bAbI suite \citep{weston2015towards} remains a standard sanity check for reading and reasoning stacks. We use it because labels are clean, code is easy to check, and per-task accuracy makes failures visible.
 
@@ -44,7 +46,11 @@ The bAbI suite \citep{weston2015towards} remains a standard sanity check for rea
 Each training example is a story (a list of sentences), a question, and a single-word answer. Stories are truncated to the last fifty sentences (paper-style cap). Each sentence and the question are padded or truncated to a fixed word length for batching. Words are embedded with a shared vocabulary that includes padding and unknown tokens.
 
 \paragraph{Sentence and question encoding.}
-When position encoding is on, each sentence is represented as a weighted sum of word embeddings, with weights given by the closed form in \citet{sukhbaatar2015end} so that word order matters. When it is off, the representation is a plain sum of embeddings (bag of words). The question uses the same encoding mode.
+When position encoding is on, each sentence is represented as a weighted sum of word embeddings, with weights from \citet{sukhbaatar2015end} so that word order matters. For sentence length $J$ and embedding dimension $d$, the weight for word position $j$ and dimension $k$ is
+\[
+l_{kj} = \left(1 - \frac{j}{J}\right) - \frac{k}{d}\left(1 - 2\frac{j}{J}\right).
+\]
+The encoded sentence is then $m_i = \sum_j l_j \odot A x_{ij}$, where $\odot$ is elementwise multiplication and $x_{ij}$ is the one-hot token at position $j$. When position encoding is off, the representation is a plain sum of embeddings (bag of words). The question uses the same encoding mode.
 
 \paragraph{Multi-hop attention.}
 Let $u$ be the question vector. For hop $k$, memory slot vectors $m_i^{(k)}$ are built from the story with embedding matrix $A^{(k)}$, and output vectors $c_i^{(k)}$ with $C^{(k)}$. Attention weights are $p_i = \mathrm{softmax}_i( u^\top m_i )$. The read vector is $o = \sum_i p_i c_i$, and the state updates as $u \leftarrow u + o$. After $K$ hops, a linear map from the final $u$ to vocabulary logits gives the predicted answer word.
@@ -58,6 +64,7 @@ Training minimizes cross-entropy on the gold answer word. Gradients are clipped 
 
 \paragraph{Dataset and splits.}
 We use bAbI English \texttt{en-10k} \citep{weston2015towards}: for each of the twenty tasks we load the provided training and test files. The \texttt{en-10k} release does not ship a separate validation file for each task, so we hold out ten percent of the pooled training examples at random (seed $42$) as validation, matching the notebook pipeline. All twenty tasks are concatenated for joint training, which matches the ``all tasks at once'' setting discussed in \citet{sukhbaatar2015end}.
+This gives a final split of $180{,}000$ training examples, $20{,}000$ validation examples, and $20{,}000$ test examples.
 
 \paragraph{Metrics.}
 We report exact-match accuracy on the answer token: a prediction is correct if the argmax over the vocabulary equals the gold answer id. We also report per-task test accuracy by masking batches with the task id stored at example build time.
@@ -70,6 +77,8 @@ Embedding dimension $50$, three hops, batch size $32$, thirty epochs, Adam optim
 After thirty epochs, the best checkpoint by validation accuracy gives \textbf{test loss $0.2900$} and \textbf{test accuracy $0.878$} ($87.8\%$) on the full joint test set.
 
 Table~\ref{tab:per_task} lists per-task test accuracy for that run. Several tasks reach $1.000$; the weakest in this run are task~19 ($0.141$), task~16 ($0.456$), and task~17 ($0.612$). Task~19 (path finding) and task~16 (basic induction) are known hard cases in the literature; our numbers are in line with ``some tasks fail under plain MemN2N training'' rather than with a fully solved system.
+
+The two weakest tasks also make sense from a reasoning point of view. Task~16 (basic induction) requires combining several entity-level observations into a rule-like generalization (for example inferring a shared attribute pattern, then applying it to a new entity). Our model has three fixed hops and no explicit mechanism for rule composition, so it can attend to relevant facts but still fail to consolidate them into a stable abstraction. Task~19 (path finding) requires multi-step graph-style composition over location relations. With a fixed memory read and a soft attention average at each hop, errors can accumulate quickly when the answer depends on a longer chain. The missing training tricks from the paper, especially linear start and broader tuning, likely matter most on exactly these tasks.
 
 We also printed attention weights for one test example (``where is john ?''). In that trace, hop~1 already puts mass $0.995$ on the sentence that states John's location, and hop~2 concentrates $1.000$ on the same slot, which matches the intended behavior of refining focus across hops.
 
