@@ -66,11 +66,21 @@ Training minimizes cross-entropy on the gold answer word. Gradients are clipped 
 We use bAbI English \texttt{en-10k} \citep{weston2015towards}: for each of the twenty tasks we load the provided training and test files. The \texttt{en-10k} release does not ship a separate validation file for each task, so we hold out ten percent of the pooled training examples at random (seed $42$) as validation, matching the notebook pipeline. All twenty tasks are concatenated for joint training, which matches the ``all tasks at once'' setting discussed in \citet{sukhbaatar2015end}.
 This gives a final split of $180{,}000$ training examples, $20{,}000$ validation examples, and $20{,}000$ test examples.
 
+At preprocessing time, each story is truncated to the most recent 50 sentences before vectorization. This follows the memory cap used in the original MemN2N experiments and keeps computation stable. Sentence length and question length are inferred from the loaded data (with hard caps in code), and in this run both resolve to length 11. We keep a shared vocabulary across story, question, and answer tokens, including explicit \texttt{<PAD>} and \texttt{<UNK>} symbols.
+
+Because we train jointly across tasks, each example keeps its task id during batching. This is only used for analysis, not as an input feature to the model. The model receives only tokenized story and question tensors and predicts one answer token.
+
 \paragraph{Metrics.}
 We report exact-match accuracy on the answer token: a prediction is correct if the argmax over the vocabulary equals the gold answer id. We also report per-task test accuracy by masking batches with the task id stored at example build time.
 
+The main score in this report is the joint test accuracy over all twenty tasks, since that reflects the single-model setting. We also include per-task accuracy to expose where the model is strong and where it fails. This is important for bAbI because a high average can still hide large errors on a few tasks.
+
 \paragraph{Hyperparameters (from our notebook).}
 Embedding dimension $50$, three hops, batch size $32$, thirty epochs, Adam optimizer with learning rate $10^{-3}$, softmax temperature as default, memory size cap $50$, max sentence length $11$ and max question length $11$ after inference from the data (with caps $20$ in code that are not tight on this split). The answer vocabulary is the same word index space as the rest of the text; in our run the vocabulary has $183$ tokens including padding and unknown. Position encoding and temporal encoding are both on. The implementation runs in PyTorch; we used whichever device the notebook selected (CPU, CUDA, or MPS). We did not sweep hyperparameters for this report.
+
+For optimization details, we train with cross-entropy loss and clip gradients to global norm 40. We save the checkpoint with the best validation accuracy and report that checkpoint on the test split. This avoids selecting by test performance and matches a standard training protocol for controlled comparison.
+
+We also note one implementation choice that affects reproducibility: if a task file has no provided validation split, the 10\% holdout is sampled once with the global random seed and then fixed for the run. This means repeated runs with a different seed could move validation and test numbers slightly, even with the same architecture.
 
 \section{Results and discussion}
 
@@ -78,12 +88,22 @@ After thirty epochs, the best checkpoint by validation accuracy gives \textbf{te
 
 Table~\ref{tab:per_task} lists per-task test accuracy for that run. Several tasks reach $1.000$; the weakest in this run are task~19 ($0.141$), task~16 ($0.456$), and task~17 ($0.612$). Task~19 (path finding) and task~16 (basic induction) are known hard cases in the literature; our numbers are in line with ``some tasks fail under plain MemN2N training'' rather than with a fully solved system.
 
+Looking at the full table, we can group outcomes into three bands. First, many tasks are essentially solved ($\\geq 0.97$), including tasks 1, 2, 4, 5, and 11 through 15 and 20. These tasks mostly depend on short supporting chains or direct retrieval once the right sentence is found. Second, there is a middle band around $0.89$ to $0.94$ (tasks 6, 7, 8, 10, 18), where the model is strong but still makes noticeable mistakes. Third, tasks 16, 17, and especially 19 remain major failure points.
+
+This distribution is useful because the average score alone (87.8\%) could suggest the model is uniformly good, which is not true. In this run, the path-finding task remains near chance-level behavior relative to other tasks. So the model should be seen as good at sentence-level retrieval and short compositional chains, but not yet robust for harder relational reasoning.
+
 The two weakest tasks also make sense from a reasoning point of view. Task~16 (basic induction) requires combining several entity-level observations into a rule-like generalization (for example inferring a shared attribute pattern, then applying it to a new entity). Our model has three fixed hops and no explicit mechanism for rule composition, so it can attend to relevant facts but still fail to consolidate them into a stable abstraction. Task~19 (path finding) requires multi-step graph-style composition over location relations. With a fixed memory read and a soft attention average at each hop, errors can accumulate quickly when the answer depends on a longer chain. The missing training tricks from the paper, especially linear start and broader tuning, likely matter most on exactly these tasks.
+
+Task~17 (positional reasoning) also fits this story. It does not collapse as badly as task~19, but it still requires relation composition that goes beyond simple lookup. The model can identify locally relevant facts, but the final answer depends on preserving the right order and relation direction through multiple intermediate updates.
 
 We also printed attention weights for one test example (``where is john ?''). In that trace, hop~1 already puts mass $0.995$ on the sentence that states John's location, and hop~2 concentrates $1.000$ on the same slot, which matches the intended behavior of refining focus across hops.
 
+Qualitatively, this attention trace is encouraging for easy cases. The model converges to the right memory slot quickly and then keeps that focus. But this same behavior can be a weakness on tasks that need several distinct supporting facts: once attention collapses too early to one slot, later hops may not recover missing evidence.
+
 \paragraph{What differs from the paper.}
 We use Adam and a single learning rate instead of the paper's SGD schedule. We did not implement linear start training or random dummy memories. Our story ordering for memory follows the notebook (recent sentences with padding), which should be checked carefully when comparing to published numbers.
+
+So the current result should be interpreted as a clean baseline implementation in modern PyTorch, not as a full reproduction of the best paper settings. The gap between strong easy-task performance and weak hard-task performance gives a clear target for the next iteration.
 
 \begin{table}[t]
 \caption{Per-task exact-match accuracy on the bAbI \texttt{en-10k} test set (one joint MemN2N run).}
@@ -110,6 +130,9 @@ task & acc & task & acc \\ \hline
 MemN2N with three hops, position encoding, and temporal encoding reaches strong average accuracy on joint bAbI \texttt{en-10k}, but a few tasks still dominate the error. The largest gains over a bag-of-words baseline would come from the same ingredients the paper stresses: more hops where needed, better sentence encoding for order-sensitive tasks, and training tricks for hard tasks.
 
 For future work we would add the paper's linear start schedule, optional random noise memory slots, and a small validation sweep over embedding size and hop count. We would also log mean error rate in the paper's style for easier comparison. Our code and numbers are fixed in the course notebook so that claims in this report can be checked line by line.
+
+More broadly, this project shows that the MemN2N design is still a useful teaching model for attention over explicit memory. It is simple enough to reimplement from scratch, but still rich enough to reveal real failure modes when reasoning depth increases. That made it a good final project because we could move from paper equations to working code, then use per-task metrics to see exactly where the model succeeds and where it breaks.
+The code used in this project is available at \url{https://github.com/kenichisutan/end-to-end-memory-networks}.
 
 \bibliography{report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC}
 \bibliographystyle{report-deep-learning-SUTAN-HAYAKAWA-IVANOVIC}
